@@ -1,18 +1,14 @@
-package redef.util
+package redef.data
 
 import scala.{CanEqual, CanThrow}
 import scala.collection.{Iterable, IterableOnce, Iterator, List, Nil}
 import scala.language.implicitConversions
 
-case class Some[A](value: A) extends AnyVal
+case class Present[A](value: A) extends AnyVal
 
-opaque type None = Null
+opaque type Optional[+A] >: (Present[A] | Null) = Present[A] | Null
 
-final val None: None = null
-
-opaque type Option[+A] >: (Some[A] | None) = Some[A] | None
-
-extension [A](self: Option[A])
+extension [A](self: Optional[A])
 
   /**
    * Returns true if the option is $none, false otherwise.
@@ -21,7 +17,7 @@ extension [A](self: Option[A])
    *
    * ```
    * option match {
-   *  case Some(_) => false
+   *  case Present(_) => false
    *  case None    => true
    * }
    * ```
@@ -36,7 +32,7 @@ extension [A](self: Option[A])
    *
    * ```
    * option match {
-   *  case Some(_) => true
+   *  case Present(_) => true
    *  case None    => false
    * }
    * ```
@@ -51,7 +47,7 @@ extension [A](self: Option[A])
    *
    * ```
    * option match {
-   *  case Some(x) => x
+   *  case Present(x) => x
    *  case None    => throw new Exception
    * }
    * ```
@@ -63,7 +59,7 @@ extension [A](self: Option[A])
    */
   def get: A throws NoSuchElementException =
     self match {
-      case Some(x) => x
+      case Present(x) => x
       case None    => throw new NoSuchElementException("None.get")
     }
 
@@ -75,7 +71,7 @@ extension [A](self: Option[A])
    *
    * ```
    * option match {
-   *  case Some(x) => x
+   *  case Present(x) => x
    *  case None    => default
    * }
    * ```
@@ -96,7 +92,7 @@ extension [A](self: Option[A])
    *
    * ```
    * option match {
-   *  case Some(x) => x
+   *  case Present(x) => x
    *  case None    => null
    * }
    * ```
@@ -104,7 +100,7 @@ extension [A](self: Option[A])
    * @example
    *
    * ```
-   * val initialText: Option[String] = getInitialText
+   * val initialText: Optional[String] = getInitialText
    * val textField = new JComponent(initialText.orNull,20)
    * ```
    */
@@ -119,7 +115,7 @@ extension [A](self: Option[A])
    *
    * ```
    * option match {
-   *  case Some(x) => Some(f(x))
+   *  case Present(x) => Present(f(x))
    *  case None    => None
    * }
    * ```
@@ -135,8 +131,8 @@ extension [A](self: Option[A])
    * @see
    *   foreach
    */
-  final inline def map[B](f: A => B): Option[B] =
-    if (isEmpty) None else Some(f(get))
+  final inline def map[B](f: A => B): Optional[B] =
+    if (isEmpty) None else Present(f(get))
 
   /**
    * Returns the result of applying $f to this $option's value if the $option is
@@ -146,7 +142,7 @@ extension [A](self: Option[A])
    *
    * ```
    * option match {
-   *  case Some(x) => f(x)
+   *  case Present(x) => f(x)
    *  case None    => ifEmpty
    * }
    * ```
@@ -175,7 +171,7 @@ extension [A](self: Option[A])
    *
    * ```
    * option match {
-   *  case Some(x) => f(x)
+   *  case Present(x) => f(x)
    *  case None    => None
    * }
    * ```
@@ -187,7 +183,7 @@ extension [A](self: Option[A])
    * @see
    *   foreach
    */
-  final inline def flatMap[B](f: A => Option[B]): Option[B] =
+  final inline def flatMap[B](f: A => Optional[B]): Optional[B] =
     if (isEmpty) None else f(get)
 
   /**
@@ -198,14 +194,14 @@ extension [A](self: Option[A])
    *
    * ```
    * option match {
-   *  case Some(Some(b)) => Some(b)
+   *  case Present(Present(b)) => Present(b)
    *  case _             => None
    * }
    * ```
    *
    * @example
    *   ```
-   *   Some(Some("something")).flatten
+   *   Present(Present("something")).flatten
    *   ```
    *
    * @param ev
@@ -213,7 +209,7 @@ extension [A](self: Option[A])
    * @see
    *   flatMap
    */
-  def flatten[B](implicit ev: A <:< Option[B]): Option[B] =
+  def flatten[B](implicit ev: A <:< Optional[B]): Optional[B] =
     if (isEmpty) None else ev(get)
 
   /**
@@ -224,7 +220,7 @@ extension [A](self: Option[A])
    *
    * ```
    * option match {
-   *  case Some(x) if p(x) => Some(x)
+   *  case Present(x) if p(x) => Present(x)
    *  case _               => None
    * }
    * ```
@@ -232,7 +228,7 @@ extension [A](self: Option[A])
    * @param p
    *   the predicate used for testing.
    */
-  final inline def filter(p: A => Boolean): Option[A] =
+  final inline def filter(p: A => Boolean): Optional[A] =
     if (isEmpty || p(get)) self else None
 
   /**
@@ -243,7 +239,7 @@ extension [A](self: Option[A])
    *
    * ```
    * option match {
-   *  case Some(x) if !p(x) => Some(x)
+   *  case Present(x) if !p(x) => Present(x)
    *  case _                => None
    * }
    * ```
@@ -251,7 +247,7 @@ extension [A](self: Option[A])
    * @param p
    *   the predicate used for testing.
    */
-  final inline def filterNot(p: A => Boolean): Option[A] =
+  final inline def filterNot(p: A => Boolean): Optional[A] =
     if (isEmpty || !p(get)) self else None
 
   /**
@@ -261,7 +257,7 @@ extension [A](self: Option[A])
    *
    * ```
    * option match {
-   *  case Some(_) => true
+   *  case Present(_) => true
    *  case None    => false
    * }
    * ```
@@ -279,18 +275,18 @@ extension [A](self: Option[A])
    *
    * ```
    * option match {
-   *  case Some(x) => x == elem
+   *  case Present(x) => x == elem
    *  case None    => false
    * }
    * ```
    *
    * @example
    *   ```
-   *   // Returns true because Some instance contains string "something" which equals "something".
-   *   Some("something") contains "something"
+   *   // Returns true because Present instance contains string "something" which equals "something".
+   *   Present("something") contains "something"
    *
    *   // Returns false because "something" != "anything".
-   *   Some("something") contains "anything"
+   *   Present("something") contains "anything"
    *
    *   // Returns false when method called on None.
    *   None contains "anything"
@@ -313,7 +309,7 @@ extension [A](self: Option[A])
    *
    * ```
    * option match {
-   *  case Some(x) => p(x)
+   *  case Present(x) => p(x)
    *  case None    => false
    * }
    * ```
@@ -332,7 +328,7 @@ extension [A](self: Option[A])
    *
    * ```
    * option match {
-   *  case Some(x) => p(x)
+   *  case Present(x) => p(x)
    *  case None    => true
    * }
    * ```
@@ -350,7 +346,7 @@ extension [A](self: Option[A])
    *
    * ```
    * option match {
-   *  case Some(x) => f(x)
+   *  case Present(x) => f(x)
    *  case None    => ()
    * }
    * ```
@@ -373,11 +369,11 @@ extension [A](self: Option[A])
    *
    * @example
    *   ```
-   *   // Returns Some(HTTP) because the partial function covers the case.
-   *   Some("http") collect {case "http" => "HTTP"}
+   *   // Returns Present(HTTP) because the partial function covers the case.
+   *   Present("http") collect {case "http" => "HTTP"}
    *
    *   // Returns None because the partial function doesn't cover the case.
-   *   Some("ftp") collect {case "http" => "HTTP"}
+   *   Present("ftp") collect {case "http" => "HTTP"}
    *
    *   // Returns None because the option is empty. There is no value to pass to the partial function.
    *   None collect {case value => value}
@@ -389,7 +385,7 @@ extension [A](self: Option[A])
    *   the result of applying `pf` to this $option's value (if possible), or
    *   $none.
    */
-  final inline def collect[B](pf: PartialFunction[A, B]): Option[B] =
+  final inline def collect[B](pf: PartialFunction[A, B]): Optional[B] =
     if (!isEmpty) pf.lift(self.get) else None
 
   /**
@@ -400,7 +396,7 @@ extension [A](self: Option[A])
    *
    * ```
    * option match {
-   *  case Some(x) => Some(x)
+   *  case Present(x) => Present(x)
    *  case None    => alternative
    * }
    * ```
@@ -408,7 +404,7 @@ extension [A](self: Option[A])
    * @param alternative
    *   the alternative expression.
    */
-  final inline def orElse[B >: A](alternative: => Option[B]): Option[B] =
+  final inline def orElse[B >: A](alternative: => Optional[B]): Optional[B] =
     if (isEmpty) alternative else self
 
   /**
@@ -420,37 +416,37 @@ extension [A](self: Option[A])
    *
    * ```
    * (option1, option2) match {
-   *   case (Some(x), Some(y)) => Some((x, y))
+   *   case (Present(x), Present(y)) => Present((x, y))
    *   case _                  => None
    * }
    * ```
    * @example
    *   ```
-   *   // Returns Some(("foo", "bar")) because both options are nonempty.
-   *   Some("foo") zip Some("bar")
+   *   // Returns Present(("foo", "bar")) because both options are nonempty.
+   *   Present("foo") zip Present("bar")
    *
    *   // Returns None because `that` option is empty.
-   *   Some("foo") zip None
+   *   Present("foo") zip None
    *
    *   // Returns None because `this` option is empty.
-   *   None zip Some("bar")
+   *   None zip Present("bar")
    *   ```
    *
    * @param that
    *   the options which is going to be zipped
    */
-  final def zip[A1 >: A, B](that: Option[B]): Option[(A1, B)] =
-    if (isEmpty || that.isEmpty) None else Some((self.get, that.get))
+  final def zip[A1 >: A, B](that: Optional[B]): Optional[(A1, B)] =
+    if (isEmpty || that.isEmpty) None else Present((self.get, that.get))
 
   /**
-   * Converts an Option of a pair into an Option of the first element and an
-   * Option of the second element.
+   * Converts an Optional of a pair into an Optional of the first element and an
+   * Optional of the second element.
    *
    * This is equivalent to:
    *
    * ```
    * option match {
-   *   case Some((x, y)) => (Some(x), Some(y))
+   *   case Present((x, y)) => (Present(x), Present(y))
    *   case _            => (None,    None)
    * }
    * ```
@@ -460,31 +456,31 @@ extension [A](self: Option[A])
    * @tparam A2
    *   the type of the second half of the element pair
    * @param asPair
-   *   an implicit conversion which asserts that the element type of this Option
+   *   an implicit conversion which asserts that the element type of this Optional
    *   is a pair.
    * @return
    *   a pair of Options, containing, respectively, the first and second half of
-   *   the element pair of this Option.
+   *   the element pair of this Optional.
    */
   final def unzip[A1, A2](using
       asPair: A <:< (A1, A2)
-  ): (Option[A1], Option[A2]) =
+  ): (Optional[A1], Optional[A2]) =
     if isEmpty
     then (None, None)
     else {
       val e = asPair(self.get)
-      (Some(e._1), Some(e._2))
+      (Present(e._1), Present(e._2))
     }
 
   /**
-   * Converts an Option of a triple into three Options, one containing the
+   * Converts an Optional of a triple into three Options, one containing the
    * element from each position of the triple.
    *
    * This is equivalent to:
    *
    * ```
    * option match {
-   *   case Some((x, y, z)) => (Some(x), Some(y), Some(z))
+   *   case Present((x, y, z)) => (Present(x), Present(y), Present(z))
    *   case _               => (None,    None,    None)
    * }
    * ```
@@ -496,20 +492,20 @@ extension [A](self: Option[A])
    * @tparam A3
    *   the type of the third of three elements in the triple
    * @param asTriple
-   *   an implicit conversion which asserts that the element type of this Option
+   *   an implicit conversion which asserts that the element type of this Optional
    *   is a triple.
    * @return
    *   a triple of Options, containing, respectively, the first, second, and
-   *   third elements from the element triple of this Option.
+   *   third elements from the element triple of this Optional.
    */
   final def unzip3[A1, A2, A3](using
       asTriple: A <:< (A1, A2, A3)
-  ): (Option[A1], Option[A2], Option[A3]) = {
+  ): (Optional[A1], Optional[A2], Optional[A3]) = {
     if (isEmpty)
       (None, None, None)
     else {
       val e = asTriple(self.get)
-      (Some(e._1), Some(e._2), Some(e._3))
+      (Present(e._1), Present(e._2), Present(e._3))
     }
   }
 
@@ -521,7 +517,7 @@ extension [A](self: Option[A])
    *
    * ```
    * option match {
-   *  case Some(x) => List(x)
+   *  case Present(x) => List(x)
    *  case None    => Nil
    * }
    * ```
@@ -539,7 +535,7 @@ extension [A](self: Option[A])
     then Failure(new NoSuchElementException("None.get"))
     else Ok(self.get)
 
-inline given (using inline ce: CanEqual[A, B]): CanEqual[Option[A], Option[B]] =
+inline given (using inline ce: CanEqual[A, B]): CanEqual[Optional[A], Optional[B]] =
   CanEqual.derived
 
 given IterableOnce[A] with
@@ -551,42 +547,42 @@ given IterableOnce[A] with
 
 end given
 
-object Option:
+object Optional:
 
   /** An implicit conversion that converts an option to an iterable value. */
-  implicit def option2Iterable[A](xo: Option[A]): Iterable[A] =
+  implicit def option2Iterable[A](xo: Optional[A]): Iterable[A] =
     if (xo.isEmpty) Iterable.empty else Iterable.single(xo.get)
 
   /**
-   * An Option factory which creates `Some(x)` if the argument is not null, and
+   * An Optional factory which creates `Present(x)` if the argument is not null, and
    * None if it is null.
    *
    * @param x
    *   the value
    * @return
-   *   Some(value) if value != null, None if value == null
+   *   Present(value) if value != null, None if value == null
    */
-  inline def apply[A](x: A | Null): Option[A] = if (x == null) None else Some(x)
+  inline def apply[A](x: A | Null): Optional[A] = if (x == null) None else Present(x)
 
   /**
-   * An Option factory which returns `None` in a manner consistent with the
+   * An Optional factory which returns `None` in a manner consistent with the
    * collections hierarchy.
    */
-  inline def empty[A]: Option[A] = None
+  inline def empty[A]: Optional[A] = None
 
   /**
    * When a given condition is true, evaluates the `a` argument and returns
-   * `Some(a)`. When the condition is false, `a` is not evaluated and `None` is
+   * `Present(a)`. When the condition is false, `a` is not evaluated and `None` is
    * returned.
    */
-  inline def when[A](cond: Boolean)(a: => A): Option[A] =
-    if (cond) Some(a) else None
+  inline def when[A](cond: Boolean)(a: => A): Optional[A] =
+    if (cond) Present(a) else None
 
   /**
    * Unless a given condition is true, this will evaluate the `a` argument and
-   * return `Some(a)`. Otherwise, `a` is not evaluated and `None` is returned.
+   * return `Present(a)`. Otherwise, `a` is not evaluated and `None` is returned.
    */
-  inline def unless[A](cond: Boolean)(a: => A): Option[A] =
+  inline def unless[A](cond: Boolean)(a: => A): Optional[A] =
     when(!cond)(a)
 
-end Option
+end Optional

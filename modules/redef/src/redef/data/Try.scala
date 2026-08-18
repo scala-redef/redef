@@ -1,4 +1,4 @@
-package redef.util
+package redef.data
 
 import scala.runtime.Statics
 import scala.util.control.NonFatal

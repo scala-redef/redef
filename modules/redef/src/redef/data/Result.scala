@@ -33,16 +33,16 @@
  *
  * >>> def parseMajorVersion(header: List[Int]): Result[ParseError, MajorVersion] =
  * ...   header.headOption match {
- * ...     case None    => Failure(ParseError.InvalidHeaderLength)
+ * ...     case None    => Err(ParseError.InvalidHeaderLength)
  * ...     case Some(1) => Ok(MajorVersion.V1)
  * ...     case Some(2) => Ok(MajorVersion.V2)
- * ...     case _       => Failure(ParseError.UnsupportedVersion)
+ * ...     case _       => Err(ParseError.UnsupportedVersion)
  * ...   }
  *
  * >>> val version = parseMajorVersion(List(1, 2, 3, 4))
  * >>> version match {
  * ...   case Ok(v)  => "working with version: " + v.toString
- * ...   case Failure(e) => "error parsing header: " + e.toString
+ * ...   case Err(e) => "error parsing header: " + e.toString
  * ... }
  * working with version: V1
  *
@@ -54,7 +54,7 @@
  *
  * {{{
  * >>> val goodResult: Result[String, Int] = Ok(10);
- * >>> val badResult: Result[String, Int] = Failure("Some Error")
+ * >>> val badResult: Result[String, Int] = Err("Some Error")
  *
  * // The `isOk` and `isFailure` methods do what they say.
  *
@@ -68,17 +68,17 @@
  * >>> goodResult.map(_ + 1)
  * Ok(11)
  *
- * // `map` leaves an `Failure` value of a `Result` as it was, ignoring the provided function
+ * // `map` leaves an `Err` value of a `Result` as it was, ignoring the provided function
  * >>> badResult.map(_ - 1)
- * Failure(Some Error)
+ * Err(Some Error)
  *
  * // Use `orElse` to handle the error.
  * scala> badResult.orElse {
  *      |   case "Anticipated Error" => Ok(0)
- *      |   case "Some Error"        => Failure(true)
- *      |   case _                   => Failure(false)
+ *      |   case "Some Error"        => Err(true)
+ *      |   case _                   => Err(false)
  *      | }
- * res1: Result[Boolean, Int] = Failure(true)
+ * res1: Result[Boolean, Int] = Err(true)
  * }}}
  *
  * =Method overview=
@@ -89,7 +89,7 @@
  * ==Querying the variant==
  *
  * The [[Result.isOk isOk]] and [[Result.isFailure isFailure]] methods return
- * `true` if the `Result` is `Ok` or `Failure`, respectively.
+ * `true` if the `Result` is `Ok` or `Err`, respectively.
  *
  * The [[Result.contains contains]] methods take in a value and return `true` if
  * it matches the inner `Ok` value.
@@ -99,9 +99,9 @@
  * These methods transform `Result` to `Option`:
  *
  *   - [[Result.failure failure]] transforms `Result[T, E]` into `Option[E]`,
- *     mapping `Failure(e)` to `Some(e)` and `Ok(v)` to `None`
+ *     mapping `Err(e)` to `Some(e)` and `Ok(v)` to `None`
  *   - [[Result.ok ok]] transforms `Result[T, E]` into `Option[T]`, mapping
- *     `Ok(v)` to `Some(v)` and `Failure(e)` to `None`
+ *     `Ok(v)` to `Some(v)` and `Err(e)` to `None`
  *   - [[Result.transposeOption transposeOption]] transposes a `Result[E,
  *     Option[T]]` into an `Option[Result[T, E]]`
  *
@@ -109,19 +109,19 @@
  *
  *   - [[Result.map map]] transforms `Result[T, E]` into `Result[U, E]` by
  *     applying the provided function to the contained value of `Ok` and leaving
- *     `Failure` values unchanged
+ *     `Err` values unchanged
  *
  * These methods transform a `Result[T, E]` into a value of a possibly different
  * type `U`:
  *
  *   - [[Result.mapOr mapOr]] and [[Result.mapErrOr mapErrOr]] applies the
- *     provided function to the contained value of `Ok` or `Failure`
+ *     provided function to the contained value of `Ok` or `Err`
  *     respecitively, or returns the provided default value.
  *
  * ==Boolean operators==
  *
  * These methods treat the `Result` as a boolean value, where `Ok` acts like
- * `true` and `Failure` acts like `false`. There are two categories of these
+ * `true` and `Err` acts like `false`. There are two categories of these
  * methods: ones that take a `Result` as input, and ones that take a function as
  * input (to be lazily evaluated).
  *
@@ -133,11 +133,11 @@
  *
  * | method | self         | input        | output       |
  * |:-------|:-------------|:-------------|:-------------|
- * | `and`  | `Failure(e)` | (ignored)    | `Failure(e)` |
- * | `and`  | `Ok(x)`      | `Failure(d)` | `Failure(d)` |
+ * | `and`  | `Err(e)` | (ignored)    | `Err(e)` |
+ * | `and`  | `Ok(x)`      | `Err(d)` | `Err(d)` |
  * | `and`  | `Ok(x)`      | `Ok(y)`      | `Ok(y)`      |
- * | `or`   | `Failure(e)` | `Failure(d)` | `Failure(d)` |
- * | `or`   | `Failure(e)` | `Ok(y)`      | `Ok(y)`      |
+ * | `or`   | `Err(e)` | `Err(d)` | `Err(d)` |
+ * | `or`   | `Err(e)` | `Ok(y)`      | `Ok(y)`      |
  * | `or`   | `Ok(x)`      | (ignored)    | `Ok(x)`      |
  *
  * The [[Result.andThen andThen]] and [[Result.orElse orElse]] methods take a
@@ -149,14 +149,14 @@
  * NOTE: [[Result.flatMap flatMap]] is equivalent to `andThen` and it is
  * provided for consistency with typical Scala conventions.
  *
- * | method    | self         | function input | function result | output       |
- * |:----------|:-------------|:---------------|:----------------|:-------------|
- * | `andThen` | `Failure(e)` | (not provided) | (not evaluated) | `Failure(e)` |
- * | `andThen` | `Ok(x)`      | `x`            | `Failure(d)`    | `Failure(d)` |
- * | `andThen` | `Ok(x)`      | `x`            | `Ok(y)`         | `Ok(y)`      |
- * | `orElse`  | `Failure(e)` | `e`            | `Failure(d)`    | `Failure(d)` |
- * | `orElse`  | `Failure(e)` | `e`            | `Ok(y)`         | `Ok(y)`      |
- * | `orElse`  | `Ok(x)`      | (not provided) | (not evaluated) | `Ok(x)`      |
+ * | method    | self         | function input | function result | output   |
+ * | :-------- | :----------- | :------------- | :-------------- | :------- |
+ * | `andThen` | `Err(e)`     | (not provided) | (not evaluated) | `Err(e)` |
+ * | `andThen` | `Ok(x)`      | `x`            | `Err(d)`        | `Err(d)` |
+ * | `andThen` | `Ok(x)`      | `x`            | `Ok(y)`         | `Ok(y)`  |
+ * | `orElse`  | `Err(e)`     | `e`            | `Err(d)`        | `Err(d)` |
+ * | `orElse`  | `Err(e)`     | `e`            | `Ok(y)`         | `Ok(y)`  |
+ * | `orElse`  | `Ok(x)`      | (not provided) | (not evaluated) | `Ok(x)`  |
  *
  * ==Implicits==
  *
@@ -171,38 +171,47 @@
  *     [[extensions.option.Ops]]
  */
 
-package redef.util
+package redef.data
 
 import scala.annotation.{implicitNotFound, experimental}
 import scala.collection.immutable.Seq
 import scala.annotation.targetName
 import scala.runtime.Statics
 
-case class Ok[+T](value: T) extends AnyVal {
+case class Ok[+T](value: T) extends AnyVal:
+
   def intoOk: T = value
 
   /**
    * Upcasts this `Ok[T, E]` to `Result[T, F]`
    */
   def withFailure[E]: Result[T, E] = this
-}
-object Ok {
-  val unit: Result[Unit, Nothing] = Ok(())
-}
 
-case class Failure[+E](err: E) extends AnyVal {
+object Ok:
+
+  final val unit: Result[Unit, Nothing] = Ok(())
+
+end Ok
+
+
+case class Err[+E](err: E) extends AnyVal:
+
   def intoFailure: E = err
 
   /**
-   * Upcasts this `Failure[T, E]` to `Result[U, E]`
+   * Upcasts this `Err[T, E]` to `Result[U, E]`
    */
   def withOk[T]: Result[T, E] = this
-}
-object Failure {
-  val unit: Result[Nothing, Unit] = Failure(())
-}
 
-type Result[+T, +E] = Ok[T] | Failure[E]
+object Err:
+
+  final val unit: Result[Nothing, Unit] = Err(())
+
+end Err
+
+
+type Result[+T, +E] = Ok[T] | Err[E]
+
 
 extension [T, E](result: Result[T, E]) {
 
@@ -211,80 +220,80 @@ extension [T, E](result: Result[T, E]) {
    */
   def isOk: Boolean = result match {
     case Ok(_)      => true
-    case Failure(_) => false
+    case Err(_) => false
   }
 
   /**
-   * Returns `true` if the `Result` is a `Failure`, `false` otherwise.
+   * Returns `true` if the `Result` is a `Err`, `false` otherwise.
    */
   def isFailure: Boolean = result match {
     case Ok(_)      => false
-    case Failure(_) => true
+    case Err(_) => true
   }
 
   /**
    * Returns the value from this `Ok` or the given `default` argument if this is
-   * a `Failure`.
+   * a `Err`.
    *
    * ''Note:'': This will throw an err if it is not a success and default throws
    * an err.
    */
   def getOrElse[U >: T](default: => U): U = result match {
     case Ok(t)      => t
-    case Failure(e) => default // if default throws, then this will throw
+    case Err(e) => default // if default throws, then this will throw
   }
 
   /**
-   * Applies `fa` if this is a `Failure` or `fb` if this is a `Ok`. If `fb` is
+   * Applies `fa` if this is a `Err` or `fb` if this is a `Ok`. If `fb` is
    * initially applied and throws an err, then `fa` is applied with this err.
    *
    * @param fok
    *   the function to apply if this is a `Ok`
    * @param ffail
-   *   the function to apply if this is a `Failure`
+   *   the function to apply if this is a `Err`
    * @return
    *   the results of applying the function
    */
   def fold[O](fok: T => O, ffail: E => O): O = result match {
     case Ok(t)      => fok(t)
-    case Failure(e) => ffail(e)
+    case Err(e) => ffail(e)
   }
 
   /**
    * Returns this `Result` if it's a `Ok` or the given `default` argument if
-   * this is a `Failure`.
+   * this is a `Err`.
    */
   def orElse[U >: T, F >: E](default: => Result[U, F]): Result[U, F] =
     result match {
       case Ok(_)      => result
-      case Failure(_) => default
+      case Err(_) => default
     }
 
   /**
    * Applies the given function `f` if this is a `Ok`, otherwise returns `Unit`
-   * if this is a `Failure`.
+   * if this is a `Err`.
    */
   def foreach[U](f: T => U): Unit = result match {
     case Ok(t)      => f(t)
-    case Failure(_) => ()
+    case Err(_) => ()
   }
 
   /**
    * Returns the given function applied to the value from this `Ok` or returns
-   * this if this is a `Failure`.
+   * this if this is a `Err`.
    */
   def flatMap[U, F >: E](f: T => Result[U, F]): Result[U, F] = result match {
     case Ok(t)      => f(t)
-    case Failure(e) => Failure(e)
+    case Err(e) => Err(e)
   }
 
   /**
    * Maps the given function to the value from this `Ok` or returns this if this
-   * is a `Failure`.
+   * is a `Err`.
    */
   def map[U](f: T => U): Result[U, E] = result match {
     case Ok(t)      => Ok(f(t))
-    case Failure(e) => Failure(e)
+    case Err(e) => Err(e)
   }
 
   /**
@@ -295,7 +304,7 @@ extension [T, E](result: Result[T, E]) {
    */
   def filterOrElse[F >: E](p: T => Boolean, default: => F): Result[T, F] =
     result match {
-      case Ok(t) if !p(t) => Failure(default)
+      case Ok(t) if !p(t) => Err(default)
       case _              => result
     }
 
@@ -372,29 +381,29 @@ extension [T, E](result: Result[T, E]) {
     case Ok(ok) =>
       ev(ok) match
         case Some(u) => Ok(u)
-        case None    => Failure(defaultFailure)
-    case Failure(e) => Failure(e)
+        case None    => Err(defaultFailure)
+    case Err(e) => Err(e)
   }
 
   /**
    * Completes this `Result` by applying the function `f` to this if this is of
-   * type `Failure`, or conversely, by applying `s` if this is a `Ok`.
+   * type `Err`, or conversely, by applying `s` if this is a `Ok`.
    */
   def transform[U >: T, F >: E](
       fok: T => Result[U, F],
       ffail: E => Result[U, F]
   ): Result[U, F] = result match {
     case Ok(t)      => fok(t)
-    case Failure(e) => ffail(e)
+    case Err(e) => ffail(e)
   }
 
   /**
-   * Inverts this `Result`. If this is a `Failure`, returns its err wrapped in a
-   * `Ok`. If this is a `Ok`, returns a `Failure` containing an `T`.
+   * Inverts this `Result`. If this is a `Err`, returns its err wrapped in a
+   * `Ok`. If this is a `Ok`, returns a `Err` containing an `T`.
    */
   def swap: Result[E, T] = result match {
-    case Ok(t)      => Failure(t)
-    case Failure(e) => Ok(e)
+    case Ok(t)      => Err(t)
+    case Err(e) => Ok(e)
   }
 
   def exists(p: T => Boolean): Boolean = result match {
@@ -416,14 +425,14 @@ extension [T, E](result: Result[T, E]) {
   def to[V](using fromResult: FromResult[T, E, V]): V = fromResult(result)
 
   /**
-   * Returns `None` if this is a `Failure` or a `Some` containing the value if
+   * Returns `None` if this is a `Err` or a `Some` containing the value if
    * this is a `Ok`.
    */
   def toOption: Option[T] =
     to[Option[T]](using FromResult.optionFromResult[T, E])
 
   /**
-   * Returns `Left` if this is a `Failure`, otherwise returns `Right` with `Ok`
+   * Returns `Left` if this is a `Err`, otherwise returns `Right` with `Ok`
    * value.
    */
   def toEither: Either[E, T] =
@@ -436,12 +445,12 @@ extension [T, E](result: Result[T, E]) {
   def toSeq: Seq[T] = to[Seq[T]](using FromResult.seqFromResult[T, E])
 
   // def toTry(using ev: A <:< Throwable): Try[T] = result match {
-  //   case Failure(e) => ev(e)
+  //   case Err(e) => ev(e)
   //   case _          => this
   // }
 
   // def toSaferTry(using ev: A <:< Throwable): Try[T] = result match {
-  //   case Failure(e) => Failure(ev(e))
+  //   case Err(e) => Err(ev(e))
   //   case _          => this
   // }
 
@@ -450,19 +459,19 @@ extension [T, E](result: Result[T, E]) {
   @experimental
   def or[U >: T, F >: E](default: => Result[U, F]): Result[U, F] =
     result match {
-      case Failure(_) => default
+      case Err(_) => default
       case _          => result
     }
 
   /**
-   * Applies the given function `f` if this is a `Failure`, otherwise returns
+   * Applies the given function `f` if this is a `Err`, otherwise returns
    * this if this is a `Ok`. This is like `flatMap` for the exception.
    *
    * ===Examples===
    *
    * {{{
    * >>> def sq(x: Int): Result[Int, Int] = { Ok(x * x) }
-   * >>> def fail(x: Int): Result[Int, Int] = { Failure(x) }
+   * >>> def fail(x: Int): Result[Int, Int] = { Err(x) }
    *
    * >>> Ok(2).recoverWith(sq).recoverWith(sq)
    * Ok(2)
@@ -470,21 +479,21 @@ extension [T, E](result: Result[T, E]) {
    * >>> Ok(2).recoverWith(fail).recoverWith(sq)
    * Ok(2)
    *
-   * >>> Failure(3).recoverWith(sq).recoverWith(fail)
+   * >>> Err(3).recoverWith(sq).recoverWith(fail)
    * Ok(9)
    *
-   * >>> Failure(3).recoverWith(fail).recoverWith(fail)
-   * Failure(3)
+   * >>> Err(3).recoverWith(fail).recoverWith(fail)
+   * Err(3)
    * }}}
    */
   def recoverWith[U >: T, F](rf: E => Result[U, F]): Result[U, F] =
     result match {
       case Ok(t)      => Ok(t)
-      case Failure(e) => rf(e)
+      case Err(e) => rf(e)
     }
 
   /**
-   * Applies the given function `f` if this is a `Failure`, otherwise returns
+   * Applies the given function `f` if this is a `Err`, otherwise returns
    * this if this is a `Ok`. This is like map for the exception.
    *
    * Maps a `Result[E, T]` to `Result[F, T]` by applying a function to a
@@ -510,7 +519,7 @@ extension [T, E](result: Result[T, E]) {
    */
   def recover[F](rf: E => F): Result[T, F] = result match {
     case Ok(t)      => Ok(t)
-    case Failure(e) => Failure(rf(e))
+    case Err(e) => Err(rf(e))
   }
 
   /**
@@ -533,34 +542,34 @@ extension [T, E](result: Result[T, E]) {
       ev: E <:< Result[U, F]
   ): Result[U, F] = result match {
     case Ok(t) => this.asInstanceOf[Result[U, F]]
-    case Failure(e) =>
+    case Err(e) =>
       ev(e) match {
         case Ok(u)      => Ok(u)
-        case Failure(f) => Failure(f)
+        case Err(f) => Err(f)
       }
   }
 
   @experimental
   def ok: Option[T] = result match {
     case Ok(t)      => Some(t)
-    case Failure(_) => None
+    case Err(_) => None
   }
 
   @experimental
   def failure: Option[E] = result match {
     case Ok(_)      => None
-    case Failure(e) => Some(e)
+    case Err(e) => Some(e)
   }
 
 }
 
-object Result {
+object Result:
 
   def cond[T, E](
       test: Boolean,
       ok: => T,
       failure: => E
-  ): Result[T, E] = if (test) Ok(ok) else Failure(failure)
+  ): Result[T, E] = if (test) Ok(ok) else Err(failure)
 
   def from[T, E, V](v: V)(using toResult: ToResult[T, E, V]): Result[T, E] =
     toResult(v)
@@ -581,25 +590,26 @@ object Result {
   implicit class MergeOps[A](private val r: Result[A, A]) extends AnyVal {
     def merge: A = r match {
       case Ok(v)      => v
-      case Failure(v) => v
+      case Err(v) => v
     }
   }
 
   def ok[T, E](value: T): Result[T, E] = Ok(value)
 
-  def failure[T, E](err: E): Result[T, E] = Failure(err)
-}
+  def failure[T, E](err: E): Result[T, E] = Err(err)
+
+end Result
 
 /**
  * Used to convert a `Result[T, E]` to a value of type `V`
  *
  * This interface is leveraged by the [[Result.to]] method.
  */
-trait FromResult[-T, -E, +V] {
-  def apply(result: Result[T, E]): V
-}
+trait FromResult[-T, -E, +V]:
 
-object FromResult {
+  def apply(result: Result[T, E]): V
+
+object FromResult:
 
   /**
    * Converts `Result[T, E]` into `Option[T]`
@@ -618,7 +628,7 @@ object FromResult {
    */
   implicit def optionFromResult[T, E]: FromResult[T, E, Option[T]] = {
     case Ok(t)      => Some(t)
-    case Failure(_) => None
+    case Err(_) => None
   }
 
   /**
@@ -638,12 +648,12 @@ object FromResult {
    */
   implicit def eitherFromResult[T, E]: FromResult[T, E, Either[E, T]] = {
     case Ok(t)      => Right(t)
-    case Failure(e) => Left(e)
+    case Err(e) => Left(e)
   }
 
   implicit def seqFromResult[T, E]: FromResult[T, E, Seq[T]] = {
     case Ok(t)      => Seq(t)
-    case Failure(_) => Seq.empty
+    case Err(_) => Seq.empty
   }
 
   /**
@@ -658,23 +668,23 @@ object FromResult {
    *
    * >>> val ex: Exception = new Exception("Error")
    * >>> val err = Err(ex)
-   * >>> err.to[scala.util.Try[Int]] == scala.util.Failure(ex)
+   * >>> err.to[scala.util.Try[Int]] == scala.util.Err(ex)
    * true
    * }}}
    */
 
   // implicit def tryFromResult[T]: FromResult[T, Exception, Try[T]] = {
   //   case Ok(t)      => Success(t)
-  //   case Failure(e) => Failure(e)
+  //   case Err(e) => Err(e)
   // }
 
   implicit def scuTryFromResult[T]
       : FromResult[T, Throwable, scala.util.Try[T]] = {
     case Ok(t)      => scala.util.Success(t)
-    case Failure(e) => scala.util.Failure(e)
+    case Err(e) => scala.util.Err(e)
   }
 
-}
+end FromResult
 
 /**
  * Used to convert a value of type `V` to a `Result[T, E]`
@@ -682,10 +692,11 @@ object FromResult {
  * This interface is leveraged by the [[Result.apply]] method and
  * [[extensions.all.Ops.toResult]].
  */
-trait ToResult[+T, +E, -V] {
+trait ToResult[+T, +E, -V]:
+
   def apply(value: V): Result[T, E]
-}
-object ToResult {
+
+object ToResult:
 
   /**
    * Converts `Either[E, T]` into `Result[T, E]`
@@ -702,7 +713,7 @@ object ToResult {
    */
   implicit def eitherToResult[T, E]: ToResult[T, E, Either[E, T]] = {
     case Right(ok) => Ok(ok)
-    case Left(e)   => Failure(e)
+    case Left(e)   => Err(e)
   }
 
   /**
@@ -715,13 +726,13 @@ object ToResult {
    * true
    *
    * >>> val ex: Exception = new Exception("Error")
-   * >>> Result(scala.util.Failure(ex)) == Err(ex)
+   * >>> Result(scala.util.Err(ex)) == Err(ex)
    * true
    * }}}
    */
   implicit def scuTryToResult[T]: ToResult[T, Throwable, scala.util.Try[T]] = {
     case scala.util.Success(v) => Ok(v)
-    case scala.util.Failure(e) => Failure(e)
+    case scala.util.Err(e) => Err(e)
   }
 
   /**
@@ -742,6 +753,7 @@ object ToResult {
    */
   implicit val booleanToResult: ToResult[Unit, Unit, Boolean] = {
     case true  => Ok.unit
-    case false => Failure.unit
+    case false => Err.unit
   }
-}
+
+end ToResult
