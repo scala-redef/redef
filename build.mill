@@ -31,9 +31,9 @@ trait ArtifactPublishModule extends PublishModule {
   def pomSettings = PomSettings(
     description = "The missing predef for Scala and for future",
     organization = "io.lqhuang",
-    url = "https://github.com/lqhuang/redef",
+    url = "https://github.com/scala-redef/scala-redef",
     licenses = Seq(Apache2),
-    versionControl = VersionControl.github("lqhuang", "redef"),
+    versionControl = VersionControl.github("scala-redef", "scala-redef"),
     developers = Seq(
       Developer("lqhuang", "Lanqing Huang", "https://github.com/lqhuang"),
     ),
@@ -82,7 +82,7 @@ object redef extends Module {
   trait JsModule extends RedefModule with ScalaJSModule {
     object test extends ScalaJSTests with TestModule.Munit {
       def ivyDeps = Agg(
-        ivy"org.scalameta::munit::1.0.4",
+        ivy"com.lihaoyi::utest::0.10.0-RC1",
       )
     }
   }
@@ -102,7 +102,9 @@ object redef extends Module {
 
   def nativeIncrementalCompilation = true
   object test extends ScalaNativeTests with TestModule.Munit {
-      def ivyDeps = Agg(ivy"org.scalameta::munit::1.0.4")
+      def ivyDeps = Agg(
+        ivy"com.lihaoyi::utest::0.10.0-RC1"
+      )
     }
   }
 }

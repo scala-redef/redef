@@ -1,0 +1,30 @@
+"""Scaladoc website targets."""
+
+load("@rules_scala//scala:scala.bzl", "scala_binary")
+load(":scaladoc_site.bzl", "scaladoc_site", "scaladoc_site_test")
+
+scala_binary(
+    name = "scaladoc_runner",
+    main_class = "dotty.tools.scaladoc.Main",
+    runtime_deps = ["@maven//:org_scala_lang_scaladoc_3"],
+)
+
+scaladoc_site(
+    name = "site",
+    index = "//:README.md",
+    pages = [
+        "src/proposal.md",
+        "src/workflow-bootstrap.md",
+        "src/workflow-maintaining.md",
+    ],
+    project_name = "Scala Native Binding Foundation",
+    scaladoc = ":scaladoc_runner",
+    sidebar = "src/sidebar.yml",
+    visibility = ["//visibility:public"],
+)
+
+scaladoc_site_test(
+    name = "site_test",
+    size = "small",
+    site = ":site",
+)

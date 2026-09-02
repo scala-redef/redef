@@ -1,0 +1,20 @@
+"""Bazel module for Scala Redef."""
+
+module(
+    name = "scala_redef",
+    version = "0.0.0",
+)
+
+bazel_dep(name = "rules_scala", version = "7.2.6")
+
+scala_config = use_extension(
+    "@rules_scala//scala/extensions:config.bzl",
+    "scala_config",
+)
+scala_config.settings(scala_version = "3.8.4")
+
+scala_deps = use_extension(
+    "@rules_scala//scala/extensions:deps.bzl",
+    "scala_deps",
+)
+scala_deps.scala()
