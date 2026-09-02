@@ -24,7 +24,7 @@ Open <http://localhost:8000/>.
 bazel test //docs:site_test
 ```
 
-The check fails when Scaladoc does not generate the site entry point.
+The check requires the site entry point, a prose page, and API pages from both modules.
 
 ## Add a page
 

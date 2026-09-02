@@ -1,0 +1,7 @@
+load("@rules_scala//scala:scala.bzl", "scala_library")
+
+scala_library(
+    name = "redef-tls",
+    srcs = glob(["src/**/*.scala"]),
+    visibility = ["//visibility:public"],
+)

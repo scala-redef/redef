@@ -13,14 +13,18 @@ scaladoc_site(
     name = "site",
     index = "//:README.md",
     pages = [
-        "src/proposal.md",
-        "src/workflow-bootstrap.md",
-        "src/workflow-maintaining.md",
+        "src/glossary.md",
+        "src/open-questions.md",
+        "src/why.md",
     ],
-    project_name = "Scala Native Binding Foundation",
+    project_name = "redef",
     scaladoc = ":scaladoc_runner",
     sidebar = "src/sidebar.yml",
     visibility = ["//visibility:public"],
+    deps = [
+        "//modules/redef",
+        "//modules/redef-tls",
+    ],
 )
 
 scaladoc_site_test(

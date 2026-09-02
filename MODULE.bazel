@@ -6,6 +6,8 @@ module(
 )
 
 bazel_dep(name = "rules_scala", version = "7.2.6")
+bazel_dep(name = "rules_java", version = "9.6.1")
+bazel_dep(name = "rules_jvm_external", version = "7.1")
 
 scala_config = use_extension(
     "@rules_scala//scala/extensions:config.bzl",
@@ -18,3 +20,17 @@ scala_deps = use_extension(
     "scala_deps",
 )
 scala_deps.scala()
+
+maven = use_extension("@rules_jvm_external//:extensions.bzl", "maven")
+maven.install(
+    artifacts = [
+        "com.lihaoyi:utest_3:0.10.0-RC1",
+        "org.scala-lang:scaladoc_3:3.8.4",
+        "org.scalacheck:scalacheck_3:1.19.0",
+    ],
+    fail_if_repin_required = True,
+    known_contributing_modules = ["protobuf"],
+    lock_file = "//:maven_install.json",
+    repositories = ["https://repo1.maven.org/maven2"],
+)
+use_repo(maven, "maven")

@@ -4,9 +4,13 @@ build --tool_java_language_version=25
 build --tool_java_runtime_version=remotejdk_25
 
 build --experimental_strict_java_deps=strict
+build --strategy=Scalac=worker
+build --worker_sandboxing
 
 common --enable_platform_specific_config
 
 build --sandbox_tmpfs_path=/tmp
+
+test --test_output=errors
 
 try-import %workspace%/.bazelrc.user

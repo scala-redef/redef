@@ -1,0 +1,8 @@
+index: index.md
+subsection:
+  - title: Why redef
+    page: why.md
+  - title: Glossary
+    page: glossary.md
+  - title: Open questions
+    page: open-questions.md

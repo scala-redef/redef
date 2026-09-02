@@ -1,0 +1,66 @@
+load("@rules_java//java:java_test.bzl", "java_test")
+load("@rules_scala//scala:scala.bzl", "scala_library")
+
+scala_library(
+    name = "redef",
+    srcs = glob(["src/**/*.scala"]),
+    scalacopts = [
+        "-language:experimental.namedTypeArguments",
+        "-language:experimental.genericNumberLiterals",
+        "-language:experimental.erasedDefinitions",
+        "-language:experimental.saferExceptions",
+        "-language:experimental.pureFunctions",
+        "-language:experimental.captureChecking",
+        "-language:experimental.into",
+        "-language:experimental.modularity",
+        "-Yexplicit-nulls",
+        "-Wsafe-init",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+scala_library(
+    name = "utest_suite",
+    scalacopts = ["-experimental"],
+    srcs = ["test/src/redef/ResultSuite.scala"],
+    deps = [
+        ":redef",
+        "@maven//:com_lihaoyi_sourcecode_3",
+        "@maven//:com_lihaoyi_utest_3",
+    ],
+    testonly = True,
+)
+
+java_test(
+    name = "utest_test",
+    main_class = "redef.UtestMain",
+    runtime_deps = [":utest_suite"],
+    size = "small",
+    use_testrunner = False,
+)
+
+scala_library(
+    name = "scalacheck_suite",
+    scalacopts = ["-experimental"],
+    srcs = ["test/src/redef/ResultProperties.scala"],
+    deps = [
+        ":redef",
+        "@maven//:org_scalacheck_scalacheck_3",
+    ],
+    testonly = True,
+)
+
+java_test(
+    name = "scalacheck_test",
+    main_class = "redef.ScalaCheckMain",
+    runtime_deps = [":scalacheck_suite"],
+    size = "small",
+    use_testrunner = False,
+)
+
+filegroup(
+    name = "negative_compile_fixture",
+    srcs = ["test/src/redef/try/TryCaptureTest.scala"],
+    tags = ["manual"],
+    testonly = True,
+)

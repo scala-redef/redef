@@ -1,3 +1,11 @@
+# Glossary
+
+## JVM and JDK
+
+## Scala
+
+## Scala JS
+
 ## Scala Native
 
 ## Native Image

@@ -1,4 +1,10 @@
+.DS_Store
 .vscode/
+.agents/*
+skills-lock.json
+
+.bazelrc.user
+/bazel-*
 
 .scala-build/
 .bloop/
