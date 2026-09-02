@@ -6,4 +6,4 @@ import scala.language.implicitConversions
 
 case class Just[A](value: A) extends AnyVal
 
-opaque type Maybe[+A] >: (Just[A] | None) = Just[A] | Nothing
+opaque type Maybe[+A] >: (Just[A] | Nothing) = Just[A] | Nothing

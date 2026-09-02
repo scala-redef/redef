@@ -3,7 +3,7 @@ package redef.math
 import scala.annotation.targetName
 import scala.math.{Numeric, Ordered}
 
-import redef.util.SafeTry
+import _root_.redef.data.SafeTry
 
 class OverflowException extends Exception
 
@@ -72,4 +72,3 @@ given SafeArithmetic[Long, OverflowException](using Numeric[Long]):
   def multiplyExact(x: Long, y: Long): Long throws OverflowException = math.multiplyExact(x, y)
   def floorDivExact(x: Long, y: Long): Long throws OverflowException = math.floorDiv(x, y)
   def floorModExact(x: Long, y: Long): Long throws OverflowException = math.floorMod(x, y)
-
